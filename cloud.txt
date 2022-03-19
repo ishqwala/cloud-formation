@@ -1,0 +1,774 @@
+{
+   "AWSTemplateFormatVersion":"2010-09-09",
+   "Resources":{
+      "JVPC":{
+         "Type":"AWS::EC2::VPC",
+         "Properties":{
+            "CidrBlock":"10.0.0.0/16",
+            "EnableDnsSupport":"false",
+            "EnableDnsHostnames":"True",
+            "InstanceTenancy":"default",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JarvisVPC"
+               }
+            ]
+         }
+      },
+      "JDMZBastionSubnet":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.9.0/24",
+            "AvailabilityZone":"us-east-1a",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZBastionSubnet"
+               }
+            ]
+         }
+      },
+      "JBastionSecurityGroup":{
+         "Type":"AWS::EC2::SecurityGroup",
+         "Properties":{
+            "GroupDescription":"Enable ssh access to the Bastion host",
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "SecurityGroupIngress":[
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"22",
+                  "ToPort":"22",
+                  "CidrIp":"125.16.140.50/32"
+               }
+            ],
+            "SecurityGroupEgress":[
+
+              {
+                  "IpProtocol":"tcp",
+                  "FromPort":"22",
+                  "ToPort":"22",
+                  "CidrIp": "0.0.0.0/0"
+              }
+
+            
+
+            ],
+            
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JBastionSecurityGroup"
+               }
+            ]
+         }
+      },
+      "JDMZPublicSubnet1":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.5.0/24",
+            "AvailabilityZone":"us-east-1a",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZPublicSubnet1"
+               }
+            ]
+         }
+      },
+      "JDMZPublicSubnet2":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.6.0/24",
+            "AvailabilityZone":"us-east-1b",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZPublicSubnet2"
+               }
+            ]
+         }
+      },
+      "JDMZPrivateSubnet1":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.7.0/24",
+            "AvailabilityZone":"us-east-1a",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZPrivateSubnet1"
+               }
+            ]
+         }
+      },
+      "JDMZPrivateSubnet2":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.8.0/24",
+            "AvailabilityZone":"us-east-1b",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZPrivateSubnet2"
+               }
+            ]
+         }
+      },
+      "JDMZDBSubnet1":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.10.0/24",
+            "AvailabilityZone":"us-east-1a",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZDBSubnet1"
+               }
+            ]
+         }
+      },
+      "JDMZDBSubnet2":{
+         "Type":"AWS::EC2::Subnet",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "CidrBlock":"10.0.11.0/24",
+            "AvailabilityZone":"us-east-1b",
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JDMZDBSubnet2"
+               }
+            ]
+         }
+      },
+      "JIGW":{
+         "Type":"AWS::EC2::InternetGateway",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JIGW"
+               }
+            ]
+         }
+      },
+      "JVPCGatewayToInternet":{
+         "Type":"AWS::EC2::VPCGatewayAttachment",
+         "Properties":{
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "InternetGatewayId":{
+               "Ref":"JIGW"
+            }
+         }
+      },
+      "JNATGateway":{
+         "Type":"AWS::EC2::NatGateway",
+         "Properties":{
+            "AllocationId":{
+               "Fn::GetAtt":[
+                  "EIP",
+                  "AllocationId"
+               ]
+            },
+            "SubnetId":{
+               "Ref":"JDMZPublicSubnet1"
+            },
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JNATGateway"
+               }
+            ]
+         }
+      },
+      "EIP":{
+         "Type":"AWS::EC2::EIP",
+         "Properties":{
+            "Domain":"JVPC"
+         }
+      },
+      "JPublicRouteTable":{
+         "Type":"AWS::EC2::RouteTable",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JPublicRouteTable"
+               }
+            ],
+            "VpcId":{
+               "Ref":"JVPC"
+            }
+         }
+      },
+      "JPublicRoute":{
+         "Type":"AWS::EC2::Route",
+         "DependsOn":"JVPCGatewayToInternet",
+         "Properties":{
+            "RouteTableId":{
+               "Ref":"JPublicRouteTable"
+            },
+            "DestinationCidrBlock":"0.0.0.0/0",
+            "GatewayId":{
+               "Ref":"JIGW"
+            }
+         }
+      },
+      "BastionSubnetRouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZBastionSubnet"
+            },
+            "RouteTableId":{
+               "Ref":"JPublicRouteTable"
+            }
+         }
+      },
+      "PublicSubnet1RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZPublicSubnet1"
+            },
+            "RouteTableId":{
+               "Ref":"JPublicRouteTable"
+            }
+         }
+      },
+      "PublicSubnet2RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZPublicSubnet2"
+            },
+            "RouteTableId":{
+               "Ref":"JPublicRouteTable"
+            }
+         }
+      },
+      "JPrivateRouteTable":{
+         "Type":"AWS::EC2::RouteTable",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JPrivateRouteTable"
+               }
+            ],
+            "VpcId":{
+               "Ref":"JVPC"
+            }
+         }
+      },
+      "JPrivateRoute":{
+         "Type":"AWS::EC2::Route",
+         "Properties":{
+            "RouteTableId":{
+               "Ref":"JPrivateRouteTable"
+            },
+            "DestinationCidrBlock":"0.0.0.0/0",
+            "NatGatewayId":{
+               "Ref":"JNATGateway"
+            }
+         }
+      },
+      "PrivateSubnet1RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZPrivateSubnet1"
+            },
+            "RouteTableId":{
+               "Ref":"JPrivateRouteTable"
+            }
+         }
+      },
+      "PrivateSubnet2RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZPrivateSubnet2"
+            },
+            "RouteTableId":{
+               "Ref":"JPrivateRouteTable"
+            }
+         }
+      },
+      
+      "DBSubnet1RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZDBSubnet1"
+            },
+            "RouteTableId":{
+               "Ref":"JPrivateRouteTable"
+            }
+         }
+      },
+      
+      "DBSubnet2RouteTableAssociation":{
+         "Type":"AWS::EC2::SubnetRouteTableAssociation",
+         "Properties":{
+            "SubnetId":{
+               "Ref":"JDMZDBSubnet2"
+            },
+            "RouteTableId":{
+               "Ref":"JPrivateRouteTable"
+            }
+         }
+      },
+      
+      "WEBSecurityGroup":{
+         "Type":"AWS::EC2::SecurityGroup",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"WEBSecurityGroup"
+               }
+            ],
+            "GroupDescription":"Allow http to client host",
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "SecurityGroupIngress":[
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"80",
+                  "ToPort":"80",
+                  "CidrIp":"125.16.140.50/32"
+               },
+               
+               {
+                 
+                 "IpProtocol":"tcp",
+                  "FromPort":"8080",
+                  "ToPort":"8080",
+                  "CidrIp":"0.0.0.0/0"
+                 
+               },
+               {
+                 
+                  "IpProtocol":"tcp",
+                  "FromPort":"80",
+                  "ToPort":"80",
+                  "CidrIp":"195.212.199.56/32"
+                 
+               },
+                 {     "IpProtocol":"tcp",
+                  "FromPort":"22",
+                  "ToPort":"22",
+                  "SourceSecurityGroupId":{
+                     "Ref":"JBastionSecurityGroup"
+                  }
+                   
+                 }
+            ],
+            "SecurityGroupEgress":[
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"80",
+                  "ToPort":"80",
+                  "CidrIp":"125.16.140.50/32"
+               },
+               
+               {
+                 
+                  "IpProtocol":"tcp",
+                  "FromPort":"8080",
+                  "ToPort":"8080",
+                  "CidrIp":"0.0.0.0/0"
+                 
+               },
+               
+               {
+                 
+                  "IpProtocol":"tcp",
+                  "FromPort":"80",
+                  "ToPort":"80",
+                  "CidrIp":"195.212.199.56/32"
+                 
+                 
+               }
+            ]
+         }
+      },
+      "ElasticLoadBalancer":{
+         "Type":"AWS::ElasticLoadBalancing::LoadBalancer",
+         "Properties":{
+            "SecurityGroups":[
+               {
+                  "Ref":"WEBSecurityGroup"
+               }
+            ],
+            "Subnets":[
+               {
+                  "Ref":"JDMZPublicSubnet1"
+               },
+               {
+                  "Ref":"JDMZPublicSubnet2"
+               }
+            ],
+            "Instances":[
+               {
+                  "Ref":"AppInstance1"
+               },
+               {
+                  "Ref":"AppInstance2"
+               }
+            ],
+            "Listeners":[
+               {
+                  "LoadBalancerPort":"80",
+                  "InstancePort":"8080",
+                  "Protocol":"HTTP"
+               }
+              
+            ],
+            "HealthCheck":{
+               "Target":"HTTP:8080/",
+               "HealthyThreshold":"3",
+               "UnhealthyThreshold":"5",
+               "Interval":"60",
+               "Timeout":"45"
+            }
+         }
+      },
+
+
+
+
+
+
+      "AppInstanceSecurityGroup":{
+         "Type":"AWS::EC2::SecurityGroup",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"APPSecurityGroup"
+               }
+            ],
+            "GroupDescription":"Allow ELB to client host",
+            "VpcId":{
+               "Ref":"JVPC"
+            },
+            "SecurityGroupIngress":[
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"8080",
+                  "ToPort":"8080",
+                  "SourceSecurityGroupId":{
+                     "Ref":"WEBSecurityGroup"
+                  }
+               },
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"22",
+                  "ToPort":"22",
+                  "SourceSecurityGroupId":{
+                     "Ref":"JBastionSecurityGroup"
+                  }
+               }
+            ],
+            "SecurityGroupEgress":[
+               {
+                  "IpProtocol":"tcp",
+                  "FromPort":"8080",
+                  "ToPort":"8080",
+                   "SourceSecurityGroupId":{
+                     "Ref":"WEBSecurityGroup"
+                  }
+               },
+               {
+
+               }
+            ]
+         }
+      },
+      
+       
+   
+      
+      
+      "JDBSubnetGroup" : {
+         "Type" : "AWS::RDS::DBSubnetGroup",
+         "Properties" : {
+            "DBSubnetGroupDescription" : "Subnet group for DB subnets in two  AZ",
+            "SubnetIds" : [  { "Ref":"JDMZDBSubnet1" },
+               {
+                  "Ref":"JDMZDBSubnet2"}
+                  ],
+     
+      
+            "Tags" : [ {"Key" : "Name", "Value" : "JDBSubnetGroup"} ]
+         }
+      },
+      
+      
+      
+      
+      
+      
+      
+      
+      "DBSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId" : { "Ref" : "JVPC" },
+        "SecurityGroupIngress": [ {
+          "IpProtocol" : "tcp",
+          "FromPort" : "3306",
+          "ToPort" : "3306",
+          "SourceSecurityGroupId":{
+          
+                               "Ref":"AppInstanceSecurityGroup"}
+        } ],
+          
+         
+          "Tags" : [ {"Key" : "Name", "Value" : "DBSecurityGroup"} ],
+        "GroupDescription": " J database access"
+      }
+    },
+      
+      
+      "JDB" : {
+      "Type" : "AWS::RDS::DBInstance",
+      "Properties" : {
+        "AllocatedStorage" : "20",
+        "DBInstanceClass" : "db.t2.small",
+        "DBInstanceIdentifier" : "JDBInstance",
+        "StorageEncrypted":"true",
+       
+       "DBName" : "JDBInstance",
+        "KmsKeyId":         { "Ref" : "JCMKAlias" }, 
+        
+        "Engine" : "MySQL",
+        "EngineVersion" : "5.7",
+        "LicenseModel" : "general-public-license",
+        "BackupRetentionPeriod": "0",
+        "PubliclyAccessible": "false",
+        "MasterUsername" : "nagendra",
+        "MasterUserPassword" : "nagendra9",
+         "DBSubnetGroupName" :  { "Ref" : "JDBSubnetGroup" },
+           "VPCSecurityGroups" : [ { "Ref" : "DBSecurityGroup" }  ]
+      }
+    },   
+      
+      
+        
+  "JrdsKmsKey" : {
+  "Type" : "AWS::KMS::Key",
+  "Properties" : {
+    "Description" : "A rds key",
+    "KeyPolicy" : {
+  "Version": "2012-10-17",
+  "Id": "key-policy-5",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::922359014214:root"
+      },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "Allow access for Key Administrators",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::922359014214:user/Nagendra.Manne@sony.com"
+      },
+      "Action": [
+        "kms:Create*",
+        "kms:Describe*",
+        "kms:Enable*",
+        "kms:List*",
+        "kms:Put*",
+        "kms:Update*",
+        "kms:Revoke*",
+        "kms:Disable*",
+        "kms:Get*",
+        "kms:Delete*",
+        "kms:ScheduleKeyDeletion",
+        "kms:CancelKeyDeletion"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Allow use of the key",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::922359014214:user/Nagendra.Manne@sony.com"
+      },
+      "Action": [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Allow attachment of persistent resources",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::922359014214:user/Nagendra.Manne@sony.com"
+      },
+      "Action": [
+        "kms:CreateGrant",
+        "kms:ListGrants",
+        "kms:RevokeGrant"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "kms:GrantIsForAWSResource": "true"
+        }
+      }
+    }
+  ]
+}}},
+     
+    "JCMKAlias" : {
+  "Type" : "AWS::KMS::Alias",
+  "Properties" : {
+    "AliasName" : "alias/JCMKAlias",
+    "TargetKeyId" : {"Ref":"JrdsKmsKey"}
+  }
+},
+
+      
+      
+      
+      
+      "JBastionJumpBox":{
+         "Type":"AWS::EC2::Instance",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"JBastionJumpBox"
+               }
+            ],
+            "ImageId":"ami-5c66ea23",
+            "InstanceType":"t2.micro",
+            "KeyName":"somcpair",
+            "NetworkInterfaces":[
+               {
+                  "AssociatePublicIpAddress":"true",
+                  "DeviceIndex":"0",
+                  "GroupSet":[
+                     {
+                        "Ref":"JBastionSecurityGroup"
+                     }
+                  ],
+                  "SubnetId":{
+                     "Ref":"JDMZBastionSubnet"
+                  }
+               }
+            ]
+         }
+      },
+      "AppInstance1":{
+         "Type":"AWS::EC2::Instance",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"AppInstance1"
+               }
+            ],
+            "ImageId":"ami-611b621e",
+            "InstanceType":"t2.micro",
+            "KeyName":"apair",
+            "NetworkInterfaces":[
+               {
+                  "AssociatePublicIpAddress":"false",
+                  "DeviceIndex":"0",
+                  "GroupSet":[
+                     {
+                        "Ref":"AppInstanceSecurityGroup"
+                     }
+                  ],
+                  "SubnetId":{
+                     "Ref":"JDMZPrivateSubnet1"
+                  }
+               }
+            ]
+         }
+      },
+      "AppInstance2":{
+         "Type":"AWS::EC2::Instance",
+         "Properties":{
+            "Tags":[
+               {
+                  "Key":"Name",
+                  "Value":"AppInstance2"
+               }
+            ],
+            "ImageId":"ami-611b621e",
+            "InstanceType":"t2.micro",
+            "KeyName":"apair",
+            "NetworkInterfaces":[
+               {
+                  "AssociatePublicIpAddress":"false",
+                  "DeviceIndex":"0",
+                  "GroupSet":[
+                     {
+                        "Ref":"AppInstanceSecurityGroup"
+                     }
+                  ],
+                  "SubnetId":{
+                     "Ref":"JDMZPrivateSubnet2"
+                  }
+               }
+            ]
+         }
+      }},
+   
+      
+      "Outputs" : {
+        
+        "JDMZDBSubnet1" : {
+      "Description" : "SubnetId of the DB1 subnet",
+      "Value" :  { "Ref" : "JDMZDBSubnet1" }
+    
+    },
+    "JDMZDBSubnet2" : {
+      "Description" : "SubnetId of the DB2 subnet",
+      "Value" :  { "Ref" : "JDMZDBSubnet2" }
+        
+      }
+        
+      
+}}
